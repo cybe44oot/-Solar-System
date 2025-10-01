@@ -88,6 +88,7 @@ jobs:
     needs: [unit-testing, code_coverage]
     runs-on: ubuntu-latest
     permissions:
+      contents: read
       packages: write
     steps:
       - name: Checkout Repository
@@ -159,3 +160,4 @@ jobs:
           tags: |
             ${{ vars.DOCKER_USERNAME }}/github-actions-solar-system:${{ github.sha }}
             ghcr.io/${{ github.repository_owner }}/github-actions-solar-system:${{ github.sha }}
+
