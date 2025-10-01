@@ -67,7 +67,7 @@ jobs:
         run: npm run coverage
 
       - name: Archive Coverage Report
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: Coverage-Report-${{ matrix.node-version }}-${{ matrix.os }}
           path: coverage
@@ -131,5 +131,6 @@ jobs:
           tags: |
             ${{ vars.DOCKER_USERNAME }}/github-actions-solar-system:${{ github.sha }}
             ghcr.io/${{ github.repository_owner }}/github-actions-solar-system:${{ github.sha }}
+
 
 
