@@ -107,7 +107,7 @@ jobs:
           export IP=$(docker inspect -f '{{range.NetworkSettings.Networks}}{{.IPAddress}}{{end}}' solar-system-test)
           echo "Container IP Address: $IP"
           echo testing the image url using wget 
-          wget -q -O - 127.0.0.1:3000/live | grep
+          wget -q -O - 127.0.0.1:3000/live | grep "ok"
 
       - name: docker push
         uses: docker/build-push-action@v4
@@ -131,6 +131,7 @@ jobs:
           tags: |
             ${{ vars.DOCKER_USERNAME }}/github-actions-solar-system:${{ github.sha }}
             ghcr.io/${{ github.repository_owner }}/github-actions-solar-system:${{ github.sha }}
+
 
 
 
