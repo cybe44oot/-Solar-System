@@ -43,7 +43,7 @@ jobs:
       - name: Archive Test Result
         uses: actions/upload-artifact@v4
         with:
-          name: Mocha-Test-Result
+          name: Mocha-Test-Result-${{ matrix.node-version }}-${{ matrix.os }}
           path: test-results.xml
 
   code_coverage:
@@ -69,7 +69,7 @@ jobs:
       - name: Archive Coverage Report
         uses: actions/upload-artifact@v3
         with:
-          name: Coverage-Report
+          name: Coverage-Report-${{ matrix.node-version }}-${{ matrix.os }}
           path: coverage
           retention-days: 5 # used for storing the artifact for 5 days only
 
@@ -131,4 +131,5 @@ jobs:
           tags: |
             ${{ vars.DOCKER_USERNAME }}/github-actions-solar-system:${{ github.sha }}
             ghcr.io/${{ github.repository_owner }}/github-actions-solar-system:${{ github.sha }}
+
 
