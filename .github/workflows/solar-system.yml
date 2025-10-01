@@ -16,9 +16,9 @@ jobs:
         ports:
           - 27017:27017
     env:
-    MONGO_URI: ${{ secrets.MONGO_URI }} # or 'mongodb://localhost:27017/superData'
-    MONGO_USERNAME: ${{ vars.MONGO_USERNAME }}
-    MONGO_PASSWORD: ${{ secrets.MONGO_PASSWORD }}
+      MONGO_URI: ${{ secrets.MONGO_URI }} # or 'mongodb://localhost:27017/superData'
+      MONGO_USERNAME: ${{ vars.MONGO_USERNAME }}
+      MONGO_PASSWORD: ${{ secrets.MONGO_PASSWORD }}
 
           # these env will be used in the docker test step
     strategy:
@@ -58,8 +58,8 @@ jobs:
           --name mongo
     env:
       MONGO_URI: mongodb://mongo:27017/superData
-    MONGO_USERNAME: non-prod-user
-    MONGO_PASSWORD: non-prod-password
+      MONGO_USERNAME: non-prod-user
+      MONGO_PASSWORD: non-prod-password
 
     runs-on: ubuntu-latest
     continue-on-error: true # prevent workflow failure if this job fails
@@ -149,6 +149,7 @@ jobs:
           tags: |
             ${{ vars.DOCKER_USERNAME }}/github-actions-solar-system:${{ github.sha }}
             ghcr.io/${{ github.repository_owner }}/github-actions-solar-system:${{ github.sha }}
+
 
 
 
