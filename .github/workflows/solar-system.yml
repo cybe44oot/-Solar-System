@@ -1,3 +1,5 @@
+
+
 name: Solar System Workflow
 
 on: 
@@ -58,8 +60,8 @@ jobs:
           --name mongo
     env:
       MONGO_URI: mongodb://mongo:27017/superData
-      MONGO_USERNAME: non-prod-user
-      MONGO_PASSWORD: non-prod-password
+    MONGO_USERNAME: non-prod-user
+    MONGO_PASSWORD: non-prod-password
 
     runs-on: ubuntu-latest
     continue-on-error: true # prevent workflow failure if this job fails
@@ -90,68 +92,80 @@ jobs:
           name: Coverage-Report-${{ matrix.node-version }}-${{ matrix.os }}
           path: coverage
           retention-days: 5 # used for storing the artifact for 5 days only
+docker:
+  name: containerization
+  needs: [unit-testing, code_coverage]
+  runs-on: ubuntu-latest
+  permissions:
+    packages: write
+  steps:
+    - name: Checkout Repository
+      uses: actions/checkout@v4
 
-  docker:
-    name: containerization
-    needs: [unit-testing, code_coverage]
-    runs-on: ubuntu-latest
-    permissions:
-      packages: write
-    steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v4
+    - name: docker login 
+      uses: docker/login-action@v2
+      with: 
+        username: ${{ vars.DOCKER_USERNAME }}
+        password: ${{ secrets.DOCKER_PASSWORD }}
 
-      - name: docker login 
-        uses: docker/login-action@v2
-        with: 
-          username: ${{ vars.DOCKER_USERNAME }}
-          password: ${{ secrets.DOCKER_PASSWORD }}
+    - name: docker build for test
+      uses: docker/build-push-action@v4
+      with:
+        context: .
+        push: false # just build and test 
+        tags: ${{ vars.DOCKER_USERNAME }}/github-actions-solar-system:${{ github.sha }}
 
-      - name: docker build for test
-        uses: docker/build-push-action@v4
-        with:
-          context: .
-          push: false # just build and test 
-          tags: ${{ vars.DOCKER_USERNAME }}/github-actions-solar-system:${{ github.sha }}
+    - name: docker test
+      run: |
+        docker images 
+        docker run --name solar-system-test -d -p 3000:3000 \
+          -e MONGO_URI=$MONGO_URI \
+          -e MONGO_USERNAME=$MONGO_USERNAME \
+          -e MONGO_PASSWORD=$MONGO_PASSWORD \
+          ${{ vars.DOCKER_USERNAME }}/github-actions-solar-system:${{ github.sha }}
 
-      - name: docker test
-        run: |
-          docker images 
-          docker run --name solar-system-test -d -p 3000:3000 \
-            -e MONGO_URI=$MONGO_URI \
-            -e MONGO_USERNAME=$MONGO_USERNAME \
-            -e MONGO_PASSWORD=$MONGO_PASSWORD \
-            ${{ vars.DOCKER_USERNAME }}/github-actions-solar-system:${{ github.sha }}
-          export IP=$(docker inspect -f '{{range.NetworkSettings.Networks}}{{.IPAddress}}{{end}}' solar-system-test)
-          echo "Container IP Address: $IP"
-          echo testing the image url using wget 
-          curl http://localhost:3000/live
+        export IP=$(docker inspect -f '{{range.NetworkSettings.Networks}}{{.IPAddress}}{{end}}' solar-system-test)
+        echo "Container IP Address: $IP"
 
-      - name: docker push
-        uses: docker/build-push-action@v4
-        with:
-          context: .
-          push: true
-          tags: ${{ vars.DOCKER_USERNAME }}/github-actions-solar-system:${{ github.sha }}
+        echo "Waiting for app to be ready..."
+        for i in {1..15}; do
+          if curl -fsS http://localhost:3000/live > /dev/null; then
+            echo "✅ App is up!"
+            break
+          fi
+          echo "Not up yet, retrying in 5s ($i/15)..."
+          sleep 5
+        done
 
-      - name: ghcr login
-        uses: docker/login-action@v2
-        with:
-          registry: ghcr.io
-          username: ${{ github.repository_owner }}
-          password: ${{ secrets.GITHUB_TOKEN }}
+        # If after loop still not up, fail and show logs
+        if ! curl -fsS http://localhost:3000/live > /dev/null; then
+          echo "❌ App did not start in time" >&2
+          docker logs solar-system-test
+          exit 1
+        fi
 
-      - name: container registry push
-        uses: docker/build-push-action@v4
-        with:
-          context: .
-          push: true
-          tags: |
-            ${{ vars.DOCKER_USERNAME }}/github-actions-solar-system:${{ github.sha }}
-            ghcr.io/${{ github.repository_owner }}/github-actions-solar-system:${{ github.sha }}
+        echo "Container test passed!"
+        docker logs solar-system-test | tail -n 50
 
+    - name: docker push
+      uses: docker/build-push-action@v4
+      with:
+        context: .
+        push: true
+        tags: ${{ vars.DOCKER_USERNAME }}/github-actions-solar-system:${{ github.sha }}
 
+    - name: ghcr login
+      uses: docker/login-action@v2
+      with:
+        registry: ghcr.io
+        username: ${{ github.repository_owner }}
+        password: ${{ secrets.GITHUB_TOKEN }}
 
-
-
-
+    - name: container registry push
+      uses: docker/build-push-action@v4
+      with:
+        context: .
+        push: true
+        tags: |
+          ${{ vars.DOCKER_USERNAME }}/github-actions-solar-system:${{ github.sha }}
+          ghcr.io/${{ github.repository_owner }}/github-actions-solar-system:${{ github.sha }}
