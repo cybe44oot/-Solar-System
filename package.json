@@ -7,8 +7,7 @@
   "scripts": {
     "start": "node app.js",
     "test": "mocha app-test.js --timeout 10000 --reporter mocha-junit-reporter --exit",
-    "coverage": "nyc --reporter cobertura --reporter lcov --reporter text --reporter json-summary  mocha app-test.js --timeout 10000  --exit"
-  },
+    "coverage": "nyc --reporter cobertura --reporter lcov --reporter text --reporter json-summary --check-coverage --lines 85 --statements 85 --functions 85 --branches 50 mocha app-test.js --timeout 10000 --exit"
   "nyc": {
     "check-coverage": true,
     "lines": 90
