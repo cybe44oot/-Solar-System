@@ -1,3 +1,5 @@
+
+
 name: Solar System Workflow
 
 on: 
@@ -6,10 +8,6 @@ on:
     branches:
       - main
       - 'feature/*'
-env:
-    MONGO_URI: ${{ secrets.MONGO_URI }} # or 'mongodb://localhost:27017/superData'
-    MONGO_USERNAME: ${{ vars.MONGO_USERNAME }}
-    MONGO_PASSWORD: ${{ secrets.MONGO_PASSWORD }}
 
 jobs:
   unit-testing:
@@ -19,6 +17,11 @@ jobs:
         image: siddharth67/mongo-db:non-prod
         ports:
           - 27017:27017
+    env:
+    MONGO_URI: ${{ secrets.MONGO_URI }} # or 'mongodb://localhost:27017/superData'
+    MONGO_USERNAME: ${{ vars.MONGO_USERNAME }}
+    MONGO_PASSWORD: ${{ secrets.MONGO_PASSWORD }}
+
           # these env will be used in the docker test step
     strategy:
       matrix:
@@ -48,17 +51,34 @@ jobs:
 
   code_coverage:
     name: Code Coverage
+    container: 
+      image: node:18
+    services:
+      mongo-db:
+        image: siddharth67/mongo-db:non-prod
+        options: 
+          --name mongo
+    env:
+      MONGO_URI: mongodb://mongo:27017/superData
+    MONGO_USERNAME: non-prod-user
+    MONGO_PASSWORD: non-prod-password
+
     runs-on: ubuntu-latest
     continue-on-error: true # prevent workflow failure if this job fails
-    needs: unit-testing
+    #needs: unit-testing
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      - name: Setup NodeJS Version
-        uses: actions/setup-node@v4
+      # - name: Setup NodeJS Version
+      #   uses: actions/setup-node@v4
+      #   with:
+      #     node-version: 18
+      - name: Cache NPM Dependencies
+        uses: actions/cache@v3
         with:
-          node-version: 20
+          path: node_modules
+          key: ${{ runner.os }}-node-modules-${{ hashFiles('/package-lock.json') }}
 
       - name: Install Dependencies
         run: npm install
@@ -104,7 +124,11 @@ jobs:
             -e MONGO_USERNAME=$MONGO_USERNAME \
             -e MONGO_PASSWORD=$MONGO_PASSWORD \
             ${{ vars.DOCKER_USERNAME }}/github-actions-solar-system:${{ github.sha }}
-         
+          export IP=$(docker inspect -f '{{range.NetworkSettings.Networks}}{{.IPAddress}}{{end}}' solar-system-test)
+          echo "Container IP Address: $IP"
+          echo testing the image url using wget 
+          curl http://localhost:3000/live
+
       - name: docker push
         uses: docker/build-push-action@v4
         with:
@@ -127,8 +151,6 @@ jobs:
           tags: |
             ${{ vars.DOCKER_USERNAME }}/github-actions-solar-system:${{ github.sha }}
             ghcr.io/${{ github.repository_owner }}/github-actions-solar-system:${{ github.sha }}
-
-
 
 
 
