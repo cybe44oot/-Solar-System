@@ -177,13 +177,14 @@ jobs:
     - name: Install kubectl
       uses: azure/setup-kubectl@v3
       with:
-        version: '1.26.0'
+        version: 'latest'
 
     - name: Fetch k8s cluster details
       run: |
         kubectl version
         echo ------------------------------------
         kubectl get pods -A
+
 
 
 
